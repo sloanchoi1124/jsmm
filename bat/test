@@ -1,0 +1,178 @@
+for (Map.Entry<Label, IrBlockFunction> pair : p.functions.entrySet()) {
+		
+			//List<List<IrStatement>> blocks = new ArrayList<List<IrStatement>>();
+			
+
+			
+			//Map<Label, List<IrStatement>> blox = new HashMap<Label, List<IrStatement>>();
+			// but I think it'll put them in there in a weird order and we don't want a weird order
+			// because we want dat first one
+			// basically how do we iterate through these without creating something new to put them in
+			// why would we even create something new to put them in
+			// well, because you do have to delete them from the list
+			// but perhaps you could just... mark them as completed somehow?
+			// maybe you copy them originally somehow
+			// also would it change the order if it's literally the same ones put in
+			// I think when you add them it'll do it in the same order
+			
+			
+			
+			
+			for (Entry<Label, IrBlockFunction> entry : p.functions.entrySet()) {
+				IrBlockFunction bf = entry.getValue();
+				for (Entry<Label, List<IrStatement>> en : bf.bodyBlocks.entrySet()) {
+					List<IrStatement> blockBody = en.getValue();
+			//		en.
+					blocks.add(blockBody);
+					// the main thing I'm worried about here is I feel like we're getting rid of the label
+					// but we probably aren't, right?
+					// the label that's jumped to is just the label of the first statement I THINK
+					// PROBABLY SHOULD TEST THAT THEORY
+				}
+				blockfs.add(bf);
+			}
+			// so at this point you have a list of blocks called blocks
+			// within the blocks there are lists of statements
+			// you'll just want the blocks
+			
+			List<Label> labelsUsed = new ArrayList<Label>();
+			
+			List<List<IrStatement>> tcs = new ArrayList<List<IrStatement>>();
+			for (List<IrStatement> blok : blocks) {
+				 IrStatement last = blok.get(blok.size() - 1);
+				 if (last instanceof IfIrStatement) {
+					 IfIrStatement iis = (IfIrStatement) last;
+					 // generally what you want to do is take off the else part and just put the else
+					 // right after the if as a fall-through
+					 // if the else has already happened, then you want to add the if right after
+					 // and invert the condition
+					 if (labelsUsed.contains(iis.elseLabel)) {
+						 // invert and add if after
+						 List<IrStatement> nb = blox.get(iis.thenLabel);
+						 Label newThen = iis.elseLabel;
+						 RelationalOperator newOp = null;
+						// iis.elseLabel = null;
+						 if (iis.op == RelationalOperator.NEQ) {
+							 newOp = RelationalOperator.EQ;
+						 }
+						 else if (iis.op == RelationalOperator.EQ) {
+							 newOp = RelationalOperator.NEQ;
+						 }
+						 else if (iis.op == RelationalOperator.LT) {
+							 newOp = RelationalOperator.GTE;
+						 }
+						 else if (iis.op == RelationalOperator.GT) {
+							 newOp = RelationalOperator.LTE;
+						 }
+						 else if (iis.op == RelationalOperator.GTE) {
+							 newOp = RelationalOperator.LT;
+						 }
+						 else if (iis.op == RelationalOperator.LTE) {
+							 newOp = RelationalOperator.GT;
+						 }
+						 IfIrStatement Fiis = new IfIrStatement(newOp, iis.left, iis.right, newThen, null);
+						 last = Fiis;
+						 // does this actually add that statement instead?
+						 tcs.add(blok);
+					 }
+					 else {
+						 List<IrStatement> nb = blox.get(iis.elseLabel);
+						 // that's for the next part
+						 IfIrStatement Fiis = new IfIrStatement(iis.op, iis.left, iis.right, iis.thenLabel, null);
+						 last = Fiis;
+						 // take off the else (change it to null) and add else after
+						 // by add after I mean look for that label in the list of IrStatements
+						 // is the label associated with the list of statements the same label the jump goes to
+						 // yes (I think)
+						 // so you'll sort of have a general block that you are dealing with at each moment, once you've put it
+						 // into the trace, you'll choose a new block, break whatever you're doing and keep going until you've
+						 // looked at all of the blocks
+						 tcs.add(blok);
+						 // break after this
+					 }
+					 
+				 }
+				 else if (last instanceof JumpIrStatement) {
+					 // check to see if the block it jumps to is in the trace
+					 // if it's in the trace already, this becomes a trace of its own???
+					 // otherwise, add the block it jumps to after it (and by that I mean analyze it)
+					 // what if you analyze it and realize it should be an outside block of its own?
+					 // hm also pretty sure this can't happen, they all kind of go to where they go and there
+					 // aren't like a ton of places jumping to that same place I think???????????????
+				 }
+			}
+			
+			Map<Label, Boolean> blockStatuses = new HashMap<Label, Boolean>();
+			List<Label> elses = new ArrayList<Label>();
+			for (IrBlockFunction bf : blockfs) {
+				for (Entry<Label, List<IrStatement>> e : bf.bodyBlocks.entrySet()) {
+					blox.put(e.getKey(), e.getValue());
+					blockStatuses.put(e.getKey(), false);
+				}
+			}
+			// now you have a list of labels and irstatements that are BLOX
+			// each member of this list is a block with its statements and label
+			// BLOX are what you want to go through
+			
+			List<List<IrStatement>> trcs = new ArrayList<List<IrStatement>>();
+			//blox.get(key)
+			///////IrBlockFunction f =
+			///////blox.get(f.bodyLabel); this is how you'll know the first block to use
+			////// and put on the trace
+			// this is where you'll get that first block you're using
+			//	 IrStatement last = blok.get(blok.size() - 1);
+			
+			
+			// how are you going to know that you've already processed a block if it doesn't have a name?
+			// perhaps we just have to look through the label, list<IrStatement> thing
+			// that may be it because we actually aren't doing anything with the lists of statements
+			// except looking at the first and last ones
+			// DOES THE FIRST ONE HAVE THE START LABEL?
+			
+			
+			
+			while (!blox.isEmpty()) {
+				// start a new trace
+				List<List<IrStatement>> trace = new ArrayList<List<IrStatement>>();
+				// this is a single trace that you will ultimately put into a body trace
+				// the List<IrStatement>s will be blocks that will be put into the trace
+				// is it okay that none of them will have labels? how are the labels even used in blockfunction
+				// oh dur also each of the statements has labels, this means even the overall labels
+				// that you jump to and stuff have labels
+				IrBlockFunction BF;
+			}
+			
+		
+		
+		
+		
+		}
+		
+		
+		
+		// this gets the first label so WE SEE OKIE?
+		Map.Entry<Label, IrBlockFunction> entry = p.functions.entrySet().iterator().next();
+		IrBlockFunction ibf = entry.getValue();
+		//List<IrStatement> = ibf.bodyBlocks;
+		//for (Entry<Label, List<IrStatement>> pair : ibf.bodyBlocks.entrySet()) {
+		
+		// this iterator is going through the block functions
+		// each of which are lists of irstatements
+		// you're gonna put these blocks into a certain order
+		// the block will be a lir
+		// these blocks/lirs will go into the llirs
+	//	Map.Entry<Label, IrBlockFunction> entry = p.functions.entrySet().iterator().next();
+		for (Map.Entry<Label, IrBlockFunction> pair : p.functions.entrySet()) {
+			IrBlockFunction f = pair.getValue();
+			Set<List<List<IrStatement>>> bodyTraces = new HashSet<List<List<IrStatement>>>();
+			List<IrStatement> lir = new ArrayList<IrStatement>();
+			// lir is a block
+			// lir will go into llir
+			List<List<IrStatement>> llir = new ArrayList<List<IrStatement>>();
+			// llir is a trace
+			// llir will go into bodyTraces
+			//for 
+			
+			//you can get the key, once you find out the label of the next one you need
+			// by using p.functions.get(LABEL) and then add it to the trace
+			// assuming it hasn't been looked at before

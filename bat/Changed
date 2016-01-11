@@ -1,0 +1,7 @@
+Things in other files that I changed:
+-Cflat.java
+	*if/else in (statement instanceof IfIrStatement)
+-Ir.java
+	*Set<List<List<IrStatement>>> to List<List<List<IrStatement>>>
+-Flatten.java
+	*
